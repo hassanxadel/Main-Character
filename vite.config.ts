@@ -1,25 +1,16 @@
 import { defineConfig } from "vite";
-import { tanstackStart } from "@tanstack/react-start/plugin/vite";
+import { TanStackRouterVite } from "@tanstack/router-plugin/vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import tsConfigPaths from "vite-tsconfig-paths";
 
-// @cloudflare/vite-plugin is only needed for `wrangler deploy` (production builds).
-// Keep it out of the dev config to avoid conflicting SSR server setups.
+// Static SPA build — works on Vercel, GitHub Pages, Netlify, any CDN.
+// TanStack Start (SSR / Cloudflare Workers) is intentionally removed.
 export default defineConfig({
-  resolve: {
-    dedupe: ["react", "react-dom", "@tanstack/react-router"],
-  },
   plugins: [
-    tsConfigPaths(),
-    tailwindcss(),
-    // tanstackStart (which wraps tanstackRouter) must come BEFORE react()
-    // per TanStack Router's plugin order requirement.
-    tanstackStart({
-      server: { entry: "server" },
-    }),
-    // react() enables the automatic JSX transform — fixes "React is not defined"
-    // in TanStack Start's client entry which uses JSX without importing React.
+    TanStackRouterVite({ autoCodeSplitting: true }),
     react(),
+    tailwindcss(),
+    tsConfigPaths(),
   ],
 });

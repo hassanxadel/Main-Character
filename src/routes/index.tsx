@@ -12,12 +12,6 @@ import {
 
 export const Route = createFileRoute("/")({
   component: Index,
-  head: () => ({
-    meta: [
-      { title: "Thursday's Main Character Invitation" },
-      { name: "description", content: "An unreasonably premium invitation for one (1) main character." },
-    ],
-  }),
 });
 
 const ease = [0.22, 1, 0.36, 1] as const;
