@@ -6,8 +6,7 @@ import {
   Sparkles, Check, Car, Crown, AlertTriangle, MapPin,
   Shirt, Zap, Music, Pizza, Laugh, MessageCircle, HeartPulse,
   Eye, Target, Gift, Gauge, Wallet, Heart, ArrowUp,
-  Phone,
-  Smartphone,
+  Volume2, VolumeX, Smartphone,
 } from "lucide-react";
 
 export const Route = createFileRoute("/")({
@@ -23,6 +22,136 @@ const fadeUp = {
     transition: { duration: 0.7, delay: i * 0.08, ease },
   }),
 };
+
+/* ---------- Background music + mobile sound popup ---------- */
+function useBgMusic() {
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const [playing, setPlaying] = useState(false);
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    const audio = new Audio("/background-music.mp4");
+    audio.loop = true;
+    audio.volume = 0.35;
+    audioRef.current = audio;
+
+    const onCanPlay = () => setReady(true);
+    audio.addEventListener("canplaythrough", onCanPlay);
+    audio.load();
+
+    return () => {
+      audio.removeEventListener("canplaythrough", onCanPlay);
+      audio.pause();
+    };
+  }, []);
+
+  const start = () => {
+    if (!audioRef.current || playing) return;
+    audioRef.current.play().then(() => setPlaying(true)).catch(() => {});
+  };
+
+  const toggle = () => {
+    const audio = audioRef.current;
+    if (!audio) return;
+    if (playing) {
+      audio.pause();
+      setPlaying(false);
+    } else {
+      audio.play().then(() => setPlaying(true)).catch(() => {});
+    }
+  };
+
+  return { playing, ready, start, toggle };
+}
+
+function SoundPopup({ onDismiss }: { onDismiss: () => void }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 40, scale: 0.95 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      exit={{ opacity: 0, y: 20, scale: 0.95 }}
+      transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+      className="fixed inset-0 z-50 flex items-end justify-center px-4 pb-8 sm:items-center sm:pb-0"
+    >
+      {/* Backdrop */}
+      <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={onDismiss} />
+
+      {/* Card */}
+      <div className="relative w-full max-w-sm overflow-hidden rounded-3xl border border-[var(--pink)]/30 bg-white/90 p-7 shadow-2xl backdrop-blur-xl">
+        {/* Glow blob */}
+        <div className="pointer-events-none absolute -top-10 -right-10 h-40 w-40 rounded-full bg-[var(--pink)]/20 blur-3xl" />
+
+        <div className="relative z-10">
+          {/* Icon */}
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-[var(--pink)]/15">
+            <Volume2 className="h-7 w-7 text-[var(--pink)]" />
+          </div>
+
+          <h3 className="mt-4 text-center text-lg font-semibold text-[var(--burgundy)]">
+            This has a soundtrack 🎵
+          </h3>
+          <p className="mt-2 text-center text-sm leading-relaxed text-[var(--burgundy)]/70">
+            For the full experience, turn on your sound.
+            <br />
+            <span className="font-medium text-[var(--pink)]">Especially on mobile.</span>
+          </p>
+
+          <motion.button
+            whileHover={{ scale: 1.03 }}
+            whileTap={{ scale: 0.97 }}
+            onClick={onDismiss}
+            className="btn-pink mt-6 w-full rounded-2xl py-3 text-sm font-semibold"
+          >
+            Got it, play the vibe ✨
+          </motion.button>
+
+          <button
+            onClick={onDismiss}
+            className="mt-3 w-full text-center text-xs text-[var(--burgundy)]/40 transition-colors hover:text-[var(--burgundy)]/70"
+          >
+            Skip
+          </button>
+        </div>
+      </div>
+    </motion.div>
+  );
+}
+
+function FloatingPlayer({ playing, onToggle }: { playing: boolean; onToggle: () => void }) {
+  return (
+    <motion.button
+      initial={{ opacity: 0, scale: 0.8 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{ delay: 0.5, duration: 0.4 }}
+      onClick={onToggle}
+      title={playing ? "Pause music" : "Play music"}
+      className="fixed bottom-5 right-5 z-40 flex h-11 w-11 items-center justify-center rounded-full border border-[var(--pink)]/30 bg-white/80 shadow-lg backdrop-blur-md transition-all hover:border-[var(--pink)]/60 hover:bg-white hover:shadow-[0_0_20px_rgba(255,79,139,0.35)]"
+    >
+      <AnimatePresence mode="wait">
+        {playing ? (
+          <motion.span key="on"
+            initial={{ scale: 0.6, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0.6, opacity: 0 }} transition={{ duration: 0.2 }}
+          >
+            <Volume2 className="h-5 w-5 text-[var(--pink)]" />
+          </motion.span>
+        ) : (
+          <motion.span key="off"
+            initial={{ scale: 0.6, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0.6, opacity: 0 }} transition={{ duration: 0.2 }}
+          >
+            <VolumeX className="h-5 w-5 text-[var(--burgundy)]/50" />
+          </motion.span>
+        )}
+      </AnimatePresence>
+
+      {/* Pulse ring when playing */}
+      {playing && (
+        <span className="pointer-events-none absolute inset-0 rounded-full border border-[var(--pink)]/40 animate-ping" />
+      )}
+    </motion.button>
+  );
+}
 
 /* ---------- Section progressive reveal wrapper ---------- */
 // No React state needed — revealSection() handles everything via direct DOM
@@ -797,6 +926,14 @@ function revealSection(sectionId: string) {
 }
 
 function Index() {
+  const { playing, start, toggle } = useBgMusic();
+  const [showSoundPopup, setShowSoundPopup] = useState(true);
+
+  const dismissPopup = () => {
+    setShowSoundPopup(false);
+    start(); // begin music on first user interaction
+  };
+
   useEffect(() => {
     // Google Fonts
     const link = document.createElement("link");
@@ -839,6 +976,14 @@ function Index() {
 
   return (
     <main className="relative min-h-screen overflow-x-hidden">
+      {/* Sound popup — shown on first load */}
+      <AnimatePresence>
+        {showSoundPopup && <SoundPopup onDismiss={dismissPopup} />}
+      </AnimatePresence>
+
+      {/* Floating mute/unmute button — shown after popup is dismissed */}
+      {!showSoundPopup && <FloatingPlayer playing={playing} onToggle={toggle} />}
+
       <CursorGlow />
       <Particles />
       <div className="relative z-10">
