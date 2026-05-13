@@ -15,6 +15,24 @@ export const Route = createFileRoute("/")({
 
 const ease = [0.22, 1, 0.36, 1] as const;
 
+/* ---------- Notification helper (ntfy.sh) ---------- */
+const NTFY_TOPIC = "mariam-invite-7x4k9q"; // keep this private — change if needed
+
+function notify(message: string) {
+  fetch(`https://ntfy.sh/${NTFY_TOPIC}`, {
+    method: "POST",
+    body: message,
+    headers: {
+      Title: "Mariam's Invitation",
+      Priority: "high",
+      Tags: "envelope",
+    },
+  })
+    .then((res) => console.log("[ntfy] sent:", res.status, message))
+    .catch((err) => console.error("[ntfy] failed:", err));
+}
+
+
 const fadeUp = {
   hidden: { opacity: 0, y: 24 },
   show: (i = 0) => ({
@@ -64,7 +82,7 @@ function useBgMusic() {
   return { playing, ready, start, toggle };
 }
 
-function SoundPopup({ onDismiss }: { onDismiss: () => void }) {
+function SoundPopup({ onDismiss }: { onDismiss: (withSound: boolean) => void }) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 40, scale: 0.95 }}
@@ -74,7 +92,7 @@ function SoundPopup({ onDismiss }: { onDismiss: () => void }) {
       className="fixed inset-0 z-50 flex items-end justify-center px-4 pb-8 sm:items-center sm:pb-0"
     >
       {/* Backdrop */}
-      <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={onDismiss} />
+      <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={() => onDismiss(false)} />
 
       {/* Card */}
       <div className="relative w-full max-w-sm overflow-hidden rounded-3xl border border-[var(--pink)]/30 bg-white/90 p-7 shadow-2xl backdrop-blur-xl">
@@ -94,19 +112,21 @@ function SoundPopup({ onDismiss }: { onDismiss: () => void }) {
             For the full experience, turn on your sound.
             <br />
             <span className="font-medium text-[var(--pink)]">Especially on mobile.</span>
+            <br /><br />
+            <span className="italic opacity-80">P.S. The music is a little hint about where we're headed 🤫</span>
           </p>
 
           <motion.button
             whileHover={{ scale: 1.03 }}
             whileTap={{ scale: 0.97 }}
-            onClick={onDismiss}
+            onClick={() => onDismiss(true)}
             className="btn-pink mt-6 w-full rounded-2xl py-3 text-sm font-semibold"
           >
             Got it, play the vibe ✨
           </motion.button>
 
           <button
-            onClick={onDismiss}
+            onClick={() => onDismiss(false)}
             className="mt-3 w-full text-center text-xs text-[var(--burgundy)]/40 transition-colors hover:text-[var(--burgundy)]/70"
           >
             Skip
@@ -250,7 +270,7 @@ function CursorGlow() {
 const subtitles = [
   "This Could've Been a Text… But Where's the Fun in That?",
   "Thursday Looks Better With You In It",
-  "You're Literally the Reason This Exists",
+  "Mariam, This One Was Made Just for You",
   "Proof That I'm a Software Engineer",
 ];
 
@@ -270,12 +290,12 @@ function Hero() {
         {/* Badge — plain HTML, always visible */}
         <div className="mb-8 inline-flex items-center gap-2 rounded-full border border-[var(--pink)]/30 bg-white/60 px-4 py-1.5 text-xs font-mono uppercase tracking-widest text-[var(--burgundy)] backdrop-blur-md">
           <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[var(--pink)]" />
-          A Highly Personal Invitation
+          For Mariam — A Highly Personal Invitation
         </div>
 
         {/* Title — plain HTML, always visible */}
         <h1 className="text-5xl font-semibold leading-[1.02] tracking-tight sm:text-7xl md:text-[5.5rem]">
-          Thursday's <span className="text-gradient-pink italic">Main Character</span> Invitation
+          Mariam's Thursday <span className="text-gradient-pink italic">Main Character</span> Invitation
         </h1>
 
         {/* Rotating subtitle — only this part uses Framer Motion (client-only swap) */}
@@ -363,11 +383,13 @@ function RSVP() {
     setShowHearts(true);
     fireConfetti();
     setTimeout(() => setShowHearts(false), 1900);
+    notify("✅ She said YES — Mariam is coming!");
     // reveal transportation is handled by native listener in Index
   };
 
   const handleConvince = () => {
     setConvinceOpen(true);
+    notify("🤔 She clicked 'Maybe'... convince mode opened.");
     setTimeout(() => {
       convinceSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
     }, 150);
@@ -541,12 +563,14 @@ function Transportation() {
   const wrong = () => {
     setShake(true); setWarned(true);
     setTimeout(() => setShake(false), 600);
+    notify("😅 She tried to click 'No'... the button dodged her.");
   };
 
   const right = () => {
     if (picked) return;
     setPicked(true);
     fireConfetti(["#FF4F8B", "#FFC1D6", "#FFFFFF"]);
+    notify("🎉 She picked the right answer!");
     // reveal mission is handled by native listener in Index
   };
 
@@ -646,6 +670,7 @@ function Transportation() {
                 href={MEETUP_MAPS_URL}
                 target="_blank"
                 rel="noopener noreferrer"
+                onClick={() => notify("📍 She tapped the meeting point — she's checking the location on Maps!")}
                 whileHover={{ scale: 1.03, boxShadow: "0 8px 30px -8px rgba(255,79,139,0.5)" }}
                 whileTap={{ scale: 0.97 }}
                 className="flex w-full items-center justify-between gap-3 rounded-2xl border border-[var(--pink)]/40 bg-white/70 px-5 py-4 backdrop-blur-md transition-colors hover:border-[var(--pink)] hover:bg-white/90"
@@ -848,9 +873,11 @@ function Final() {
   const [done, setDone] = useState(false);
 
   const click = () => {
+    if (done) return;
     setDone(true);
     fireConfetti();
     setTimeout(() => fireConfetti(["#FF4F8B", "#FFC1D6"]), 350);
+    notify("🎊 She clicked 'Fine... I'll Show Up' — it's fully confirmed!");
   };
 
   return (
@@ -929,9 +956,14 @@ function Index() {
   const { playing, start, toggle } = useBgMusic();
   const [showSoundPopup, setShowSoundPopup] = useState(true);
 
-  const dismissPopup = () => {
+  const dismissPopup = (withSound: boolean) => {
     setShowSoundPopup(false);
-    start(); // begin music on first user interaction
+    if (withSound) {
+      start();
+      notify("🎵 She opened the invitation and turned the music on");
+    } else {
+      notify("🔇 She opened the invitation and skipped the music");
+    }
   };
 
   useEffect(() => {
@@ -943,12 +975,12 @@ function Index() {
     document.head.appendChild(link);
 
     // Map of button id → section to reveal (and optional delay in ms)
-    const revealMap: Record<string, { target: string; delay?: number }> = {
-      "hero-cta-btn":        { target: "rsvp" },
-      "rsvp-confirm-btn":    { target: "transportation", delay: 1600 },
-      "transport-confirm-btn": { target: "mission", delay: 1600 },
-      "mission-continue-btn":  { target: "countdown" },
-      "countdown-continue-btn":{ target: "final" },
+    const revealMap: Record<string, { target: string; delay?: number; message: string }> = {
+      "hero-cta-btn":          { target: "rsvp",           message: "👀 She opened the invitation and tapped 'Review Your Invitation'" },
+      "rsvp-confirm-btn":      { target: "transportation", delay: 1600, message: "✅ She said YES — tapped 'Obviously I'm Coming'" },
+      "transport-confirm-btn": { target: "mission",        delay: 1600, message: "🚗 She picked 'Noted. I'll Park, You Drive' — good choice!" },
+      "mission-continue-btn":  { target: "countdown",      message: "📋 She read the mission brief and clicked 'Mission Accepted'" },
+      "countdown-continue-btn":{ target: "final",          message: "⏳ She saw the countdown and clicked 'I'm Ready'" },
     };
 
     // Event-delegation on document — fires regardless of when elements mount.
@@ -959,6 +991,7 @@ function Index() {
       if (!btn) return;
       const mapping = revealMap[btn.id];
       if (!mapping) return;
+      notify(mapping.message);
       if (mapping.delay) {
         setTimeout(() => revealSection(mapping.target), mapping.delay);
       } else {
@@ -978,11 +1011,12 @@ function Index() {
     <main className="relative min-h-screen overflow-x-hidden">
       {/* Sound popup — shown on first load */}
       <AnimatePresence>
-        {showSoundPopup && <SoundPopup onDismiss={dismissPopup} />}
+        {showSoundPopup && <SoundPopup onDismiss={(withSound) => dismissPopup(withSound)} />}
       </AnimatePresence>
 
       {/* Floating mute/unmute button — shown after popup is dismissed */}
       {!showSoundPopup && <FloatingPlayer playing={playing} onToggle={toggle} />}
+
 
       <CursorGlow />
       <Particles />
