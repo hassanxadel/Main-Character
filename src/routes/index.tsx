@@ -769,9 +769,14 @@ function getNextThursday() {
   const now = new Date();
   const d = new Date(now);
   const day = d.getDay();
-  const diff = (4 - day + 7) % 7 || 7;
-  d.setDate(d.getDate() + diff);
+  // Days until this week's Thursday (Thursday = 4). On Thursday this is 0 — same day, not +7.
+  const daysToThursday = (4 - day + 7) % 7;
+  d.setDate(d.getDate() + daysToThursday);
   d.setHours(19, 0, 0, 0);
+  // If 7 PM today (or this week's Thursday) has already passed, count down to next Thursday.
+  if (d.getTime() <= now.getTime()) {
+    d.setDate(d.getDate() + 7);
+  }
   return d;
 }
 
